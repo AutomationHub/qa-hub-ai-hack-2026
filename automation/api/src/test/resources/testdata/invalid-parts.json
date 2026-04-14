@@ -1,0 +1,28 @@
+[
+  {
+    "description": "Part without name field",
+    "category": 1,
+    "active": true,
+    "error_expected": "Name is required"
+  },
+  {
+    "name": "Part Without Category",
+    "description": "Part missing category field",
+    "active": true,
+    "error_expected": "Category is required"
+  },
+  {
+    "name": "",
+    "description": "Part with empty name",
+    "category": 1,
+    "active": true,
+    "error_expected": "Name cannot be empty"
+  },
+  {
+    "name": "Part with Invalid Category",
+    "description": "Part with non-existent category ID",
+    "category": 999999,
+    "active": true,
+    "error_expected": "Invalid category ID"
+  }
+]
