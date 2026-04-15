@@ -1,413 +1,312 @@
 ---
 skill: automate-api-test
-description: Automates an API test case by analyzing the framework, generating REST Assured test code, and submitting a PR
+description: Automate an API test case (invokes api-test-automator agent)
 args: test-case-id
 triggers:
   - "automate api test"
-  - "generate api test"
+  - "generate api test automation"
   - "implement api test case"
 ---
 
 # API Test Automation Command
 
-Automates an API test case from test-cases/api/ by:
-1. Reading the test case specification
-2. Analyzing the existing REST Assured framework
-3. Generating POJOs if needed
-4. Generating test methods with proper assertions
-5. Creating a PR
+**Lightweight wrapper for the API Test Automator agent.**
 
 ## Usage
 
-```
+```bash
 /automate-api-test <test-case-id>
 ```
 
-Example:
-```
+**Examples:**
+```bash
 /automate-api-test API_PART_001
+/automate-api-test API_PART_015
 ```
 
-## Workflow
+---
 
-You are an expert SDET implementing API test automation using the existing REST Assured + Java + TestNG framework.
+## What This Command Does
 
-### Step 1 — Parse Arguments
+This command is a **lightweight wrapper** that invokes the `api-test-automator` agent to handle the complete API test automation workflow.
 
-Extract the test case ID from the args parameter. Format: `API_PART_XXX`
+### Workflow Overview
 
-### Step 2 — Read Test Case
+The agent will:
+1. ✅ Read the test case from `test-cases/api/`
+2. ✅ **Automatically** assess automation feasibility (ROI, complexity)
+3. ✅ Analyze the REST Assured framework
+4. ✅ Create a git branch
+5. ✅ Analyze API responses (if needed)
+6. ✅ Generate/update POJO models
+7. ✅ Generate test methods using REST Assured
+8. ✅ Verify compilation
+9. ✅ Commit and push changes
+10. ✅ Create pull request
+11. ✅ Display comprehensive summary
 
-Read the test case from `test-cases/api/` directory:
-- Look for files matching the test case ID
-- Parse test case details:
-  - Endpoint (e.g., POST /api/part/)
-  - Request payload
-  - Expected status code
-  - Expected response fields
-  - Validation rules
-- If test case not found, show error and list available test cases
+---
 
-### Step 3 — Analyze Framework
+## Implementation
 
-Read and understand the existing framework:
-- `automation/api/src/main/java/com/inventree/api/base/BaseApi.java` — Request spec builder
-- `automation/api/src/main/java/com/inventree/api/models/*.java` — POJOs
-- `automation/api/src/main/java/com/inventree/api/endpoints/*.java` — Endpoint constants
-- `automation/api/src/main/java/com/inventree/api/utils/TestDataGenerator.java` — Test data helpers
-- `automation/api/src/test/java/com/inventree/api/tests/*.java` — Test classes
-- Understand the REST Assured pattern and coding conventions
+### Step 1: Parse and Validate Arguments
 
-### Step 4 — Create Git Branch
+Extract the test case ID from `$ARGUMENTS`:
+- Format expected: `API_PART_XXX` (e.g., API_PART_001, API_PART_015)
+- Validate format with regex: `^API_PART_\d{3}$`
 
-```bash
-git checkout main
-git pull origin main
-git checkout -b automate-api-<test-case-id-lowercase>
+**If no arguments provided:**
+```
+❌ Error: Missing test case ID
+
+Usage: /automate-api-test <test-case-id>
+
+Example: /automate-api-test API_PART_001
+
+Available test cases:
+  Run: /qa-orchestrator assess api
+  Or check: test-cases/api/api-manual-tests.csv
 ```
 
-### Step 5 — Launch API Analysis Agent
-
-**OPTIONAL:** If the test case involves a new API endpoint or complex logic, use the Agent tool to spawn a specialized agent for API analysis.
-
-The agent should:
-- Call the actual InvenTree API endpoint (using curl or REST Assured)
-- Analyze the response structure
-- Identify all response fields and their types
-- Document any nested objects or arrays
-- Test error scenarios (400, 404, 401, etc.)
-- Return the API behavior documentation
-
-Example agent prompt:
+**If invalid format:**
 ```
-Analyze the InvenTree API endpoint: POST /api/part/
+❌ Error: Invalid test case ID format
 
-1. Call the endpoint with valid data and capture response
-2. Call with invalid data and capture error response
-3. Document response structure (fields, types, required vs optional)
-4. Test different authentication scenarios
-5. Identify validation rules
+Expected: API_PART_XXX (e.g., API_PART_001)
+Received: {invalid_input}
 
-Return:
-- Sample request payload
-- Sample success response
-- Sample error responses
-- Response field mapping
+Please use the correct format and try again.
 ```
 
-### Step 6 — Check/Create POJOs
+---
 
-Based on the test case and API response:
-- Check if POJO already exists (e.g., Part.java, PartCategory.java)
-- If POJO exists and has all needed fields, use it
-- If POJO is missing fields, add them with proper Jackson annotations
-- If POJO doesn't exist, create a new POJO:
-  - Use `@JsonIgnoreProperties(ignoreUnknown = true)`
-  - Use `@JsonInclude(JsonInclude.Include.NON_NULL)`
-  - Add `@JsonProperty` for all fields
-  - Implement Builder pattern
-  - Add toString() method
+### Step 2: Invoke API Test Automator Agent
 
-Example POJO:
-```java
-@JsonIgnoreProperties(ignoreUnknown = true)
-@JsonInclude(JsonInclude.Include.NON_NULL)
-public class Part {
-    @JsonProperty("pk")
-    private Integer pk;
+Use the **Agent** tool to invoke the `api-test-automator` agent:
 
-    @JsonProperty("name")
-    private String name;
+```
+Agent(
+  description: "Automate API test case",
+  prompt: """
+    You are the API Test Automator agent defined in .claude/agents/api-test-automator.md.
 
-    // ... getters, setters, builder
-}
+    **Task:** Automate API test case {test_case_id}
+
+    **Test Case ID:** {test_case_id}
+
+    **Instructions:**
+    Follow the complete workflow defined in your agent file:
+    1. Validate and read the test case
+    2. Assess automation feasibility (automatic)
+    3. Get user confirmation if needed
+    4. Analyze the framework structure
+    5. Create git branch
+    6. Analyze API response (if needed)
+    7. Generate/update POJO models
+    8. Generate test method using REST Assured
+    9. Verify compilation
+    10. Commit changes
+    11. Create pull request
+    12. Display comprehensive summary
+
+    **Framework:**
+    - Location: automation/api/
+    - Pattern: REST Assured + POJOs + TestNG
+    - Config: .claude/config/test-automation/api-framework.md
+
+    **Test Cases:**
+    - Location: test-cases/api/
+    - Files: api-manual-tests.csv, api-manual-tests.md
+
+    Execute the complete automation workflow and report results.
+  """
+)
 ```
 
-### Step 7 — Add Endpoint Constant (if needed)
+---
 
-If the test case uses a new endpoint:
-- Add the endpoint constant to appropriate file in `endpoints/` package
-- Follow existing naming convention
+### Step 3: Display Results
 
-Example:
-```java
-public static final String PART_ATTACHMENTS = "/part/{id}/attachments/";
-```
+The agent will handle all output and user interaction.
 
-### Step 8 — Update TestDataGenerator (if needed)
+This command simply invokes the agent and lets it control the workflow.
 
-If the test case needs specific test data that doesn't exist:
-- Add a new method to TestDataGenerator
-- Use unique suffixes to avoid name collisions
-- Follow existing pattern
+---
 
-Example:
-```java
-public static Part partWithAttachments() {
-    return Part.builder()
-        .name("Part with Attachments " + getUniqueSuffix())
-        .description("Part for attachment testing")
-        .category(1)
-        .active(true)
-        .build();
-}
-```
+## Agent Features
 
-### Step 9 — Generate Test Method
+The `api-test-automator` agent provides:
 
-Create a new test method in the appropriate test class (or create new test class if needed):
-- Follow the pattern in existing tests (e.g., PartCrudTest.java)
-- Use BaseApi for request spec (givenAdmin(), givenAllAccess(), etc.)
-- Use POJOs for request/response
-- Use Hamcrest matchers for assertions
-- Use AssertJ for complex assertions
-- Include proper TestNG and Allure annotations
-- Follow the test case steps exactly
+### ✅ Automatic Feasibility Assessment
+Before starting automation, the agent automatically:
+- Calculates automation score (typically 7-10 for API tests)
+- Computes ROI (API tests usually have excellent ROI)
+- Assesses technical complexity (usually lower than UI)
+- Evaluates maintenance effort
 
-Example structure:
-```java
-@Test(groups = {"regression"}, priority = X)
-@Story("Test Case API_PART_XXX")
-@Description("Test case description from test case file")
-@Severity(SeverityLevel.NORMAL)
-public void testXXX() {
-    logger.info("=== Test: API_PART_XXX ===");
+**Note:** API tests typically score HIGHER than UI tests because:
+- More stable interfaces
+- Easier to automate
+- Less brittle
+- Better maintainability
 
-    // Step 1: Prepare test data
-    Part part = TestDataGenerator.validPart();
+### ✅ API Response Analysis
+- Optionally spawns agent to call live API
+- Documents response structure
+- Identifies all fields and types
+- Tests error scenarios
 
-    // Step 2: Make API request
-    Response response = BaseApi.givenAdmin()
-        .body(part)
-        .post(PartEndpoints.PARTS);
+### ✅ Smart POJO Generation
+- Creates type-safe Java models
+- Handles nested objects
+- Uses Jackson annotations
+- Follows framework conventions
 
-    // Log response
-    logResponse(response);
+### ✅ REST Assured Test Generation
+- Follows framework patterns
+- Comprehensive assertions (status, headers, body)
+- Tests positive and negative scenarios
+- Includes proper TestNG annotations
 
-    // Step 3: Verify response
-    response.then()
-        .statusCode(201)
-        .body("name", equalTo(part.getName()))
-        .body("pk", notNullValue());
+### ✅ Quality Checks
+- Verifies Maven compilation
+- Ensures framework pattern compliance
+- Validates POJO serialization
+- Checks test structure
 
-    // Step 4: Additional validations
-    Part createdPart = response.as(Part.class);
-    assertThat(createdPart.getName()).isEqualTo(part.getName());
+### ✅ Git Integration
+- Creates feature branch
+- Commits with descriptive message
+- Pushes to remote
+- Creates detailed pull request
 
-    // Step 5: Cleanup
-    int partId = response.jsonPath().getInt("pk");
-    createdPartIds.add(partId);
-
-    logger.info("=== Test Passed ===");
-}
-```
-
-### Step 10 — Add JSON Schema (if needed)
-
-If the test case requires schema validation:
-- Create a JSON schema file in `src/test/resources/schemas/`
-- Follow JSON Schema Draft 7 format
-- Add schema validation to test method:
-  ```java
-  response.then()
-      .body(matchesJsonSchemaInClasspath("schemas/your-schema.json"));
-  ```
-
-### Step 11 — Verify Compilation
-
-Run Maven compile to ensure no errors:
-```bash
-cd automation/api
-mvn clean compile
-```
-
-If compilation fails, fix the errors before proceeding.
-
-### Step 12 — Run the Test
-
-Verify the test works:
-```bash
-cd automation/api
-mvn test -Dtest=<TestClassName>#<testMethodName>
-```
-
-Check the test passes. If it fails, debug and fix.
-
-### Step 13 — Commit Changes
-
-```bash
-git add automation/api/src/main/java/com/inventree/api/
-git add automation/api/src/test/java/com/inventree/api/
-git add automation/api/src/test/resources/
-git commit -m "$(cat <<'EOF'
-Automate API test case <test-case-id>
-
-- Added/Updated POJO for API entity
-- Added test method for <test-case-description>
-- Test uses REST Assured with proper assertions
-
-Test Case: <test-case-id>
-Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
-EOF
-)"
-```
-
-### Step 14 — Create Pull Request
-
-Use GitHub CLI to create PR:
-```bash
-gh pr create --title "Automate API Test: <test-case-id>" --body "$(cat <<'EOF'
-## Summary
-Implements automated test for API test case <test-case-id>
-
-## Changes
-- ✅ Added/Updated POJO: `<PojoName>.java`
-- ✅ Added test method: `testXXX()`
-- ✅ Verified compilation and test execution
-
-## Test Case Details
-**ID:** <test-case-id>
-**Endpoint:** <HTTP_METHOD> <endpoint_path>
-**Status Code:** <expected_status>
-
-**Request:**
-```json
-<sample request payload>
-```
-
-**Expected Response:**
-```json
-<sample response>
-```
-
-## Framework
-- **Library:** REST Assured 5.5.0
-- **Test Framework:** TestNG
-- **Assertions:** Hamcrest + AssertJ
-- **Reporting:** Allure
-
-## Testing
-```bash
-cd automation/api
-mvn test -Dtest=<TestClassName>#<testMethodName>
-```
-
-## Validations Implemented
-- ✅ Status code: <expected_status>
-- ✅ Response body fields
-- ✅ Response structure (JSON schema)
-- ✅ Error handling (if negative test)
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-EOF
-)"
-```
-
-### Step 15 — Output Summary
-
-Provide a summary to the user:
-```
-✅ API Test Case <test-case-id> Automated Successfully
-
-📋 Test Case: <test-case-title>
-🔗 Endpoint: <HTTP_METHOD> <endpoint>
-🌿 Branch: automate-api-<test-case-id-lowercase>
-
-📄 Files Modified/Created:
-   - automation/api/src/main/java/com/inventree/api/models/<POJO>.java
-   - automation/api/src/test/java/com/inventree/api/tests/<TestClass>.java
-
-🔗 Pull Request: <PR URL>
-
-🧪 Run the test locally:
-   cd automation/api
-   mvn test -Dtest=<TestClass>#<testMethod>
-
-📊 View Allure Report:
-   mvn allure:serve
-```
-
-## Important Notes
-
-- **Always use POJOs** - Don't construct JSON strings manually
-- **Use BaseApi helpers** - Don't create inline auth specs
-- **Follow existing patterns** - Check similar tests in PartCrudTest.java
-- **Proper cleanup** - Add created resource IDs to `createdPartIds` for auto-cleanup
-- **Comprehensive assertions** - Verify status code AND response body fields
-- **Test groups** - Use appropriate groups: smoke, regression, negative
-- **Compile before committing** - `mvn clean compile` must pass
-- **Run test before PR** - Verify test passes: `mvn test -Dtest=...`
+---
 
 ## Error Handling
 
-If test case file not found:
-- List available test cases in test-cases/api/
-- Ask user to verify the test case ID
+All error handling is managed by the agent:
 
-If API call fails during testing:
-- Check base URL in config.properties
-- Verify demo server is accessible
-- Check authentication credentials
-- Review request payload format
+- **Test case not found:** Lists available test cases
+- **Low automation score:** Warns (rare for API tests)
+- **API unavailable:** Provides alternatives
+- **Compilation failed:** Attempts fixes, shows errors
+- **PR creation failed:** Provides manual instructions
 
-If compilation fails:
-- Show the compilation errors
-- Fix syntax errors, imports, missing dependencies
-- Do not create PR until compilation succeeds
+---
 
-If test fails:
-- Review API response in logs
-- Check if test data is valid
-- Verify assertions match actual response
-- Debug and fix before creating PR
-
-## Example Usage
+## Example Session
 
 ```bash
-# Automate test case API_PART_001
-/automate-api-test API_PART_001
+User: /automate-api-test API_PART_001
 
-# This will:
-# 1. Read test-cases/api/part-api-tests.md (or similar)
-# 2. Analyze existing Part.java POJO
-# 3. Add test method to PartCrudTest.java
-# 4. Verify compilation and test execution
-# 5. Commit and create PR
+Output:
+┌────────────────────────────────────────────────────────┐
+│  API Test Automation - Agent Invoked                  │
+└────────────────────────────────────────────────────────┘
+
+📋 Test Case: API_PART_001
+🤖 Agent: api-test-automator
+🔧 Framework: REST Assured
+
+Invoking automation agent...
+
+[Agent takes over execution]
+
+📖 Reading test case API_PART_001...
+✅ Test case found: "Create part with valid data"
+   Endpoint: POST /api/part/
+   Expected Status: 201
+
+🤖 Automation Feasibility Assessment...
+✅ Score: 9.2/10 ⭐⭐⭐ (Excellent)
+   ROI: 6.5:1 (Outstanding)
+   Complexity: Low (2/10)
+   Estimated Effort: 1.5 hours
+
+✅ Proceeding with automation...
+
+🌿 Creating branch: automate-api-api_part_001...
+✅ Branch created
+
+🔍 Analyzing API response...
+   ✅ Response structure documented
+   ✅ 12 fields identified
+
+📝 Generating POJO models...
+   ✅ Part.java created
+   ✅ PartCreateRequest.java created
+
+🧪 Generating test method...
+   ✅ testCreatePartWithValidData() added
+   ✅ Status code assertion included
+   ✅ Response body assertions included
+   ✅ REST Assured pattern followed
+
+🔨 Verifying compilation...
+   ✅ mvn clean compile successful
+
+💾 Committing changes...
+   ✅ Committed: Automate API test case API_PART_001
+
+📤 Pushing to remote...
+   ✅ Pushed: origin/automate-api-api_part_001
+
+🔗 Creating pull request...
+   ✅ PR #43 created
+
+╔════════════════════════════════════════════════════════╗
+║  ✅ API TEST AUTOMATION COMPLETE                       ║
+╚════════════════════════════════════════════════════════╝
+
+📋 Test Case: API_PART_001
+🔗 PR: https://github.com/.../pull/43
+🌿 Branch: automate-api-api_part_001
+
+🧪 Run locally:
+   cd automation/api
+   mvn test -Dtest=PartApiTest#testCreatePartWithValidData
 ```
 
-## Test Case Format Expected
+---
 
-The test case file should have clear API details:
+## Benefits of Agent Pattern
 
-```markdown
-## Test Case ID: API_PART_001
+### ✅ Separation of Concerns
+- Command: Simple argument parsing and validation
+- Agent: Complex automation workflow
 
-**Title:** Create Part via API
+### ✅ Reusability
+- Agent can be invoked by orchestrator
+- Agent can be invoked directly
+- Agent can spawn sub-agents
 
-**Endpoint:** POST /api/part/
+### ✅ Maintainability
+- Complex logic in agent file
+- Easy to update workflow
+- Clear responsibilities
 
-**Request Payload:**
-```json
-{
-  "name": "Test Part",
-  "description": "Description",
-  "category": 1,
-  "active": true
-}
-```
+### ✅ Async Capability
+- Agent can run in background
+- Long-running operations handled properly
+- Progress tracking available
 
-**Expected Status Code:** 201
+---
 
-**Expected Response Fields:**
-- pk (integer, not null)
-- name (string, matches request)
-- description (string, matches request)
-- category (integer, matches request)
-- active (boolean, true)
+## See Also
 
-**Validation Rules:**
-- Name is required
-- Category is required
-```
+- **Agent definition:** `.claude/agents/api-test-automator.md`
+- **Framework config:** `.claude/config/test-automation/api-framework.md`
+- **Test cases:** `test-cases/api/api-manual-tests.csv`
+- **Orchestrator:** `/qa-orchestrator automate api API_PART_001`
 
-The command will parse this format and generate appropriate test code.
+---
+
+## Notes
+
+- This command is a **wrapper** - the agent does all the work
+- The agent follows the workflow defined in its file
+- All user interaction is handled by the agent
+- This command simply validates input and invokes the agent
+- API tests typically have higher automation scores than UI tests
+
+**For detailed workflow steps, see:** `.claude/agents/api-test-automator.md`

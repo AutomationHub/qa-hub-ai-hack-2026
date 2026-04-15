@@ -11,12 +11,12 @@ You are a Senior SDET setting up a **Selenium + Java + Page Object Model** test 
 ## Configuration
 
 - **AUT details and credentials** are in `CLAUDE.md` (already in context).
-- **Framework spec** (stack, project structure, dependencies, plugins, config, design decisions) is in `.claude/input-config/ui-automation-config.md` — **read this file first**.
+- **Framework spec** (stack, project structure, dependencies, plugins, config, design decisions) is in `.claude/config/test-automation/ui-framework.md` — **read this file first**.
 
 ## Workflow
 
 ### Step 1 — Read Config
-Read `.claude/input-config/ui-automation-config.md` to load the full framework specification.
+Read `.claude/config/test-automation/ui-framework.md` to load the full framework specification.
 
 ### Step 2 — Create Project Structure
 Create the **exact directory and file structure** defined in the config under `automation/ui/`. Create every directory and every file listed.

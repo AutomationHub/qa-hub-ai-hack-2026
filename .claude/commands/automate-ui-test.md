@@ -1,269 +1,303 @@
 ---
 skill: automate-ui-test
-description: Automates a UI test case by inspecting elements with Playwright MCP, generating POM code, creating test methods, and submitting a PR
+description: Automate a UI test case (invokes ui-test-automator agent)
 args: test-case-id
 triggers:
   - "automate ui test"
-  - "generate ui test"
+  - "generate ui test automation"
   - "implement ui test case"
 ---
 
 # UI Test Automation Command
 
-Automates a UI test case from test-cases/ui/ by:
-1. Reading the test case specification
-2. Using Playwright MCP to inspect elements and generate locators
-3. Updating Page Objects with real locators
-4. Generating test methods
-5. Creating a PR
+**Lightweight wrapper for the UI Test Automator agent.**
 
 ## Usage
 
-```
+```bash
 /automate-ui-test <test-case-id>
 ```
 
-Example:
-```
+**Examples:**
+```bash
 /automate-ui-test UI_PART_001
+/automate-ui-test UI_PART_014
 ```
 
-## Workflow
+---
 
-You are an expert SDET implementing UI test automation using the existing Selenium + Java + POM framework.
+## What This Command Does
 
-### Step 1 — Parse Arguments
+This command is a **lightweight wrapper** that invokes the `ui-test-automator` agent to handle the complete UI test automation workflow.
 
-Extract the test case ID from the args parameter. Format: `UI_PART_XXX`
+### Workflow Overview
 
-### Step 2 — Read Test Case
+The agent will:
+1. ✅ Read the test case from `test-cases/ui/`
+2. ✅ **Automatically** assess automation feasibility (ROI, complexity)
+3. ✅ Analyze the Selenium + POM framework
+4. ✅ Create a git branch
+5. ✅ Use Playwright MCP to inspect UI elements
+6. ✅ Update Page Objects with real locators
+7. ✅ Generate test methods following POM pattern
+8. ✅ Verify compilation
+9. ✅ Commit and push changes
+10. ✅ Create pull request
+11. ✅ Display comprehensive summary
 
-Read the test case from `test-cases/ui/` directory:
-- Look for files matching the test case ID
-- Parse test case details: title, preconditions, steps, expected results
-- If test case not found, show error and list available test cases
+---
 
-### Step 3 — Analyze Framework
+## Implementation
 
-Read and understand the existing framework structure:
-- `automation/ui/src/main/java/com/inventree/ui/pages/*.java` — Page Objects
-- `automation/ui/src/test/java/com/inventree/ui/tests/*.java` — Test classes
-- Understand the POM pattern and coding conventions
+### Step 1: Parse and Validate Arguments
 
-### Step 4 — Create Git Branch
+Extract the test case ID from `$ARGUMENTS`:
+- Format expected: `UI_PART_XXX` (e.g., UI_PART_001, UI_PART_014)
+- Validate format with regex: `^UI_PART_\d{3}$`
 
-```bash
-git checkout main
-git pull origin main
-git checkout -b automate-ui-<test-case-id-lowercase>
+**If no arguments provided:**
+```
+❌ Error: Missing test case ID
+
+Usage: /automate-ui-test <test-case-id>
+
+Example: /automate-ui-test UI_PART_001
+
+Available test cases:
+  Run: /qa-orchestrator assess ui
+  Or check: test-cases/ui/ui-manual-tests.csv
 ```
 
-### Step 5 — Launch Playwright Inspection Agent
-
-**CRITICAL:** Use the Agent tool to spawn a specialized agent for Playwright inspection.
-
-The agent should:
-- Open the InvenTree demo application (https://demo.inventree.org)
-- Login with admin credentials (admin/inventree)
-- Navigate to the pages mentioned in the test case
-- Use Playwright MCP `playwright_navigate` and `playwright_screenshot` to inspect elements
-- For each element in the test case steps:
-  - Take screenshots of the page
-  - Identify the element (button, input field, link, etc.)
-  - Use browser DevTools to find CSS selectors or XPath
-  - Document the locator strategy (prefer CSS > XPath > ID)
-- Return a mapping of element names to locators
-
-Example agent prompt:
+**If invalid format:**
 ```
-Use Playwright MCP to inspect InvenTree demo app and find locators for:
-- Login page: username field, password field, login button
-- Parts page: add part button, search box, parts table
-- Create Part form: name field, description field, category dropdown, save button
+❌ Error: Invalid test case ID format
 
-For each element:
-1. Navigate to the page
-2. Take a screenshot
-3. Inspect the element
-4. Provide the best CSS selector
+Expected: UI_PART_XXX (e.g., UI_PART_001)
+Received: {invalid_input}
 
-Return a structured list of element names and their locators.
+Please use the correct format and try again.
 ```
 
-### Step 6 — Update Page Objects
+---
 
-Based on the locators from the Playwright agent:
-- Identify which Page Object file needs updates (e.g., LoginPage.java, PartsListPage.java)
-- Replace `// TODO: update selector` placeholders with real locators
-- Update only the locators relevant to this test case
-- Keep the existing method structure intact
+### Step 2: Invoke UI Test Automator Agent
 
-Example:
-```java
-// Before
-private static final By USERNAME_FIELD = By.id("username"); // TODO: update selector
+Use the **Agent** tool to invoke the `ui-test-automator` agent:
 
-// After (using real locator from Playwright)
-private static final By USERNAME_FIELD = By.cssSelector("input[name='login']");
+```
+Agent(
+  description: "Automate UI test case",
+  prompt: """
+    You are the UI Test Automator agent defined in .claude/agents/ui-test-automator.md.
+
+    **Task:** Automate UI test case {test_case_id}
+
+    **Test Case ID:** {test_case_id}
+
+    **Instructions:**
+    Follow the complete workflow defined in your agent file:
+    1. Validate and read the test case
+    2. Assess automation feasibility (automatic)
+    3. Get user confirmation if needed
+    4. Analyze the framework structure
+    5. Create git branch
+    6. Use Playwright MCP to inspect elements
+    7. Update Page Objects with real locators
+    8. Generate test method
+    9. Verify compilation
+    10. Commit changes
+    11. Create pull request
+    12. Display comprehensive summary
+
+    **Framework:**
+    - Location: automation/ui/
+    - Pattern: Page Object Model (Selenium + Java + TestNG)
+    - Config: .claude/config/test-automation/ui-framework.md
+
+    **Test Cases:**
+    - Location: test-cases/ui/
+    - Files: ui-manual-tests.csv, ui-manual-tests.md
+
+    Execute the complete automation workflow and report results.
+  """
+)
 ```
 
-### Step 7 — Generate Test Method
+---
 
-Create a new test method in the appropriate test class (or create new test class if needed):
-- Follow the pattern in existing tests (e.g., PartCreationTest.java)
-- Use the Page Objects (don't write Selenium code directly)
-- Include proper assertions for expected results
-- Add TestNG annotations: `@Test`, groups, Allure annotations
-- Follow the test case steps exactly
+### Step 3: Display Results
 
-Example structure:
-```java
-@Test(groups = {"regression"}, priority = X)
-@Story("Test Case UI_PART_XXX")
-@Description("Test case description from test case file")
-public void testXXX() {
-    logger.info("=== Starting Test: UI_PART_XXX ===");
+The agent will handle all output and user interaction.
 
-    // Step 1: Navigate and login
-    loginAsAdmin();
-    DashboardPage dashboard = new DashboardPage(driver);
+This command simply invokes the agent and lets it control the workflow.
 
-    // Step 2: Navigate to Parts page
-    PartsListPage partsPage = dashboard.navigateToParts();
+---
 
-    // Step 3: ... follow test case steps
+## Agent Features
 
-    // Assertions
-    assertThat(actual).isEqualTo(expected);
+The `ui-test-automator` agent provides:
 
-    logger.info("=== Test Passed ===");
-}
-```
+### ✅ Automatic Feasibility Assessment
+Before starting automation, the agent automatically:
+- Calculates automation score (0-10)
+- Computes ROI (time saved vs. effort)
+- Assesses technical complexity
+- Evaluates maintenance effort
 
-### Step 8 — Verify Compilation
+**Decision points:**
+- Score ≥ 6: Proceed automatically
+- Score 4-6: Ask user confirmation (show warning)
+- Score < 4: Recommend against automation (but allow override)
 
-Run Maven compile to ensure no errors:
-```bash
-cd automation/ui
-mvn clean compile
-```
+### ✅ Playwright Inspection
+- Spawns specialized agent for element inspection
+- Opens live InvenTree demo app
+- Captures CSS selectors for all UI elements
+- Prefers: ID > Name > CSS class > XPath
 
-If compilation fails, fix the errors before proceeding.
+### ✅ Smart Code Generation
+- Follows existing POM pattern
+- Updates only relevant Page Objects
+- Generates clean, testable code
+- Includes proper TestNG annotations
+- Adds comprehensive assertions
 
-### Step 9 — Commit Changes
+### ✅ Quality Checks
+- Verifies Maven compilation
+- Ensures POM pattern compliance
+- Validates test structure
+- Checks for proper logging
 
-```bash
-git add automation/ui/src/main/java/com/inventree/ui/pages/*.java
-git add automation/ui/src/test/java/com/inventree/ui/tests/*.java
-git commit -m "$(cat <<'EOF'
-Automate UI test case <test-case-id>
+### ✅ Git Integration
+- Creates feature branch
+- Commits with descriptive message
+- Pushes to remote
+- Creates pull request with detailed description
 
-- Updated Page Objects with real locators from Playwright inspection
-- Added test method for <test-case-description>
-- Test follows framework POM pattern
-
-Test Case: <test-case-id>
-Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
-EOF
-)"
-```
-
-### Step 10 — Create Pull Request
-
-Use GitHub CLI to create PR:
-```bash
-gh pr create --title "Automate UI Test: <test-case-id>" --body "$(cat <<'EOF'
-## Summary
-Implements automated test for test case <test-case-id>
-
-## Changes
-- ✅ Updated Page Object locators using Playwright inspection
-- ✅ Added test method: `testXXX()`
-- ✅ Verified compilation with Maven
-
-## Test Case Details
-**ID:** <test-case-id>
-**Title:** <test-case-title>
-
-**Steps Automated:**
-<list of steps from test case>
-
-## Framework
-- **Pattern:** Page Object Model
-- **Tool:** Selenium WebDriver 4.x
-- **Test Framework:** TestNG
-- **Locator Strategy:** CSS Selectors (via Playwright inspection)
-
-## Testing
-```bash
-cd automation/ui
-mvn test -Dtest=<TestClassName>#<testMethodName> -Dheadless=false
-```
-
-## Locators Added/Updated
-<list of page objects and locators updated>
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-EOF
-)"
-```
-
-### Step 11 — Output Summary
-
-Provide a summary to the user:
-```
-✅ UI Test Case <test-case-id> Automated Successfully
-
-📋 Test Case: <test-case-title>
-🌿 Branch: automate-ui-<test-case-id-lowercase>
-📄 Files Modified:
-   - automation/ui/src/main/java/com/inventree/ui/pages/<PageObject>.java
-   - automation/ui/src/test/java/com/inventree/ui/tests/<TestClass>.java
-
-🔗 Pull Request: <PR URL>
-
-🧪 Run the test locally:
-   cd automation/ui
-   mvn test -Dtest=<TestClass>#<testMethod> -Dheadless=false
-```
-
-## Important Notes
-
-- **Always use Playwright MCP agent** to get real locators from the live application
-- **Never hardcode placeholder locators** - all locators must be inspected
-- **Follow existing framework patterns** - don't create new base classes or utilities
-- **Keep Page Objects clean** - only locators and action methods, no assertions
-- **Test methods have assertions** - verify expected results from test case
-- **Compile before committing** - `mvn clean compile` must pass
-- **One test case per PR** - don't automate multiple test cases in one PR
+---
 
 ## Error Handling
 
-If Playwright MCP is not available:
-- Try using browser DevTools manually
-- Provide instructions to user on how to find locators
-- Document the locators needed and ask user to provide them
+All error handling is managed by the agent:
 
-If test case file not found:
-- List available test cases in test-cases/ui/
-- Ask user to verify the test case ID
+- **Test case not found:** Lists available test cases
+- **Low automation score:** Warns and asks confirmation
+- **Playwright unavailable:** Asks for manual selectors
+- **Compilation failed:** Attempts fixes, shows errors
+- **PR creation failed:** Provides manual instructions
 
-If compilation fails:
-- Show the compilation errors
-- Fix syntax errors
-- Verify imports and class names
-- Do not create PR until compilation succeeds
+---
 
-## Example Usage
+## Example Session
 
 ```bash
-# Automate test case UI_PART_001
-/automate-ui-test UI_PART_001
+User: /automate-ui-test UI_PART_001
 
-# This will:
-# 1. Read test-cases/ui/part-creation-tests.md (or similar)
-# 2. Use Playwright to inspect elements on demo.inventree.org
-# 3. Update CreatePartPage.java with real locators
-# 4. Add test method to PartCreationTest.java
-# 5. Commit and create PR
+Output:
+┌────────────────────────────────────────────────────────┐
+│  UI Test Automation - Agent Invoked                   │
+└────────────────────────────────────────────────────────┘
+
+📋 Test Case: UI_PART_001
+🤖 Agent: ui-test-automator
+🔧 Framework: Selenium + POM
+
+Invoking automation agent...
+
+[Agent takes over execution]
+
+📖 Reading test case UI_PART_001...
+✅ Test case found: "Create part with required fields only"
+
+🤖 Automation Feasibility Assessment...
+✅ Score: 8.5/10 ⭐⭐⭐ (High Priority)
+   ROI: 4.2:1 (Excellent)
+   Complexity: Low (3/10)
+   Estimated Effort: 2.5 hours
+
+✅ Proceeding with automation...
+
+🌿 Creating branch: automate-ui-ui_part_001...
+✅ Branch created
+
+🔍 Inspecting UI elements with Playwright...
+   [Playwright agent spawned]
+   ✅ 8 elements inspected
+   ✅ CSS selectors generated
+
+✏️ Updating Page Objects...
+   ✅ CreatePartPage.java (3 locators updated)
+   ✅ PartsListPage.java (2 locators updated)
+
+🧪 Generating test method...
+   ✅ testCreatePartWithRequiredFieldsOnly() added
+   ✅ Assertions included
+   ✅ POM pattern followed
+
+🔨 Verifying compilation...
+   ✅ mvn clean compile successful
+
+💾 Committing changes...
+   ✅ Committed: Automate UI test case UI_PART_001
+
+📤 Pushing to remote...
+   ✅ Pushed: origin/automate-ui-ui_part_001
+
+🔗 Creating pull request...
+   ✅ PR #42 created
+
+╔════════════════════════════════════════════════════╗
+║  ✅ UI TEST AUTOMATION COMPLETE                    ║
+╚════════════════════════════════════════════════════╝
+
+📋 Test Case: UI_PART_001
+🔗 PR: https://github.com/.../pull/42
+🌿 Branch: automate-ui-ui_part_001
+
+🧪 Run locally:
+   cd automation/ui
+   mvn test -Dtest=PartCreationTest#testCreatePartWithRequiredFieldsOnly
 ```
+
+---
+
+## Benefits of Agent Pattern
+
+### ✅ Separation of Concerns
+- Command: Simple argument parsing and validation
+- Agent: Complex automation workflow
+
+### ✅ Reusability
+- Agent can be invoked by orchestrator
+- Agent can be invoked directly
+- Agent can spawn sub-agents
+
+### ✅ Maintainability
+- Complex logic in agent file
+- Easy to update workflow
+- Clear responsibilities
+
+### ✅ Async Capability
+- Agent can run in background
+- Long-running operations handled properly
+- Progress tracking available
+
+---
+
+## See Also
+
+- **Agent definition:** `.claude/agents/ui-test-automator.md`
+- **Framework config:** `.claude/config/test-automation/ui-framework.md`
+- **Test cases:** `test-cases/ui/ui-manual-tests.csv`
+- **Orchestrator:** `/qa-orchestrator automate ui UI_PART_001`
+
+---
+
+## Notes
+
+- This command is a **wrapper** - the agent does all the work
+- The agent follows the workflow defined in its file
+- All user interaction is handled by the agent
+- This command simply validates input and invokes the agent
+
+**For detailed workflow steps, see:** `.claude/agents/ui-test-automator.md`

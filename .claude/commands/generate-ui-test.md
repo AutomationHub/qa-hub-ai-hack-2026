@@ -1,57 +1,125 @@
 ---
-description: "Generate UI manual test cases for a specific functional area of the InvenTree Parts module. Usage: /ui-test-generator <functional-area>. Run without arguments to see available areas."
+description: "Generate UI manual test cases (invokes ui-test-generator agent). Usage: /generate-ui-test <functional-area>. Run without arguments to see available areas."
 disable-model-invocation: true
-allowed-tools: WebFetch, Agent, Write, Read, Glob, Grep
+allowed-tools: Agent, Read
 ---
 
-# UI Manual Test Case Generation — InvenTree Parts Module
+# UI Test Generation Command
 
-You are a Senior QA Engineer generating comprehensive UI/manual test cases for the **InvenTree Parts module**.
+**Lightweight wrapper for the UI Test Generator agent.**
 
-## Input
+## Usage
 
-**Functional area requested:** `$ARGUMENTS`
+```bash
+/generate-ui-test <functional-area>
+```
 
-If `$ARGUMENTS` is empty or not provided, do NOT generate any test cases. Instead, read the menu text from `.claude/input-config/ui-areas.md` and display it to the user.
+**Examples:**
+```bash
+/generate-ui-test part-creation
+/generate-ui-test part-detail-view
+/generate-ui-test part-attributes
+```
 
-## Configuration
+**Without arguments:**
+```bash
+/generate-ui-test
+```
+Shows menu of available functional areas.
 
-- **AUT details, credentials, output conventions** are in `CLAUDE.md` (already in context).
-- **UI functional area definitions** (descriptions, min test counts, doc URLs) are in `.claude/input-config/ui-areas.md` — read this file before proceeding.
+---
 
-## Workflow
+## What This Command Does
 
-### Step 1 — Load Config
-Read `.claude/input-config/ui-areas.md`. Identify the matching functional area for `$ARGUMENTS`. If no match, show the menu.
+This command is a **lightweight wrapper** that invokes the `ui-test-generator` agent to handle the complete test generation workflow.
 
-### Step 2 — Ingest Requirements
-Use the **requirements-analyzer** agent to fetch and analyse **only the documentation URLs mapped to the requested area** (from `ui-areas.md`). The agent must return structured testable requirements.
+### Workflow Overview
 
-### Step 3 — Generate Test Cases
-Using the extracted requirements, generate test cases for the requested area. Respect the **minimum test count** defined in `.claude/input-config/ui-areas.md`. Include all **scenario types** defined in the skill config (positive, negative, boundary, permission).
+The agent will:
+1. ✅ Load functional area configuration
+2. ✅ Spawn requirements-analyzer agent
+3. ✅ Generate test cases (min 12+ per area)
+4. ✅ **Automatically** run quality review
+5. ✅ Display results and quality report
 
-### Step 4 — Format & Output
-Check if `test-cases/ui/ui-manual-tests.csv` and `test-cases/ui/ui-manual-tests.md` already exist. If yes, **append** (continue the ID sequence). If no, create new files.
+---
 
-**CSV columns:**
+## Implementation
 
-| Column | Description |
-|--------|-------------|
-| Test Case ID | Format: `UI_PART_XXX` (sequential) |
-| Module | The functional area name |
-| Priority | P1 / P2 / P3 / P4 |
-| Test Scenario | Brief scenario name |
-| Description | What is being validated |
-| Preconditions | Setup needed before execution |
-| Test Steps | Numbered step-by-step actions |
-| Expected Result | Clear pass criteria |
-| Test Type | Positive / Negative / Boundary / Permission |
+### Step 1: Parse Arguments
 
-Also output a Markdown version at `test-cases/ui/ui-manual-tests.md`.
+Extract functional area from `$ARGUMENTS`:
+- If empty: Read `.claude/config/test-generation/ui-functional-areas.md` and display menu
+- If provided: Pass to agent
 
-## Quality Criteria
+---
 
-- Every test case must be **executable by a manual tester** with no ambiguity
-- Steps must reference **specific UI elements** (buttons, tabs, forms, fields)
-- Expected results must be **observable and verifiable**
-- No duplicates. Traceable to documentation.
+### Step 2: Invoke UI Test Generator Agent
+
+Use the **Agent** tool:
+
+```
+Agent(
+  description: "Generate UI test cases",
+  prompt: """
+    You are the UI Test Generator agent defined in .claude/agents/ui-test-generator.md.
+
+    **Task:** Generate UI test cases for functional area: {functional_area}
+
+    **Instructions:**
+    Follow the complete workflow defined in your agent file:
+    1. Load configuration from .claude/config/test-generation/ui-functional-areas.md
+    2. Invoke requirements-analyzer agent for documentation URLs
+    3. Generate comprehensive test cases (respect minimum test count)
+    4. Automatically run quality review
+    5. Display results and recommendations
+
+    **Configuration:**
+    - Config: .claude/config/test-generation/ui-functional-areas.md
+    - Output: test-cases/ui/ui-manual-tests.csv (and .md)
+
+    Execute the complete generation workflow and report results.
+  """
+)
+```
+
+---
+
+### Step 3: Display Results
+
+The agent handles all output and quality review display.
+
+---
+
+## Agent Features
+
+The `ui-test-generator` agent provides:
+
+### ✅ Requirements Analysis
+- Spawns requirements-analyzer agent
+- Extracts 50-150+ testable requirements
+- Categorizes by type
+
+### ✅ Comprehensive Test Generation
+- Positive, negative, boundary, permission tests
+- Balanced distribution
+- Specific UI element references
+- Observable expected results
+
+### ✅ Automatic Quality Review
+- Completeness check
+- Clarity scoring
+- Coverage analysis
+- Immediate feedback
+
+---
+
+## See Also
+
+- **Agent definition:** `.claude/agents/ui-test-generator.md`
+- **Config:** `.claude/config/test-generation/ui-functional-areas.md`
+- **Orchestrator:** `/qa-orchestrator generate ui part-creation`
+
+---
+
+**Note:** This is a wrapper - the agent does all the work.

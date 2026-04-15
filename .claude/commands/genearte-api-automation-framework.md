@@ -11,12 +11,12 @@ You are a Senior SDET setting up a **REST Assured + Java + TestNG** API test aut
 ## Configuration
 
 - **AUT details and credentials** are in `CLAUDE.md` (already in context).
-- **Framework spec** (stack, project structure, dependencies, plugins, config, design decisions) is in `.claude/input-config/api-automation-config.md` — **read this file first**.
+- **Framework spec** (stack, project structure, dependencies, plugins, config, design decisions) is in `.claude/config/test-automation/api-framework.md` — **read this file first**.
 
 ## Workflow
 
 ### Step 1 — Read Config
-Read `.claude/input-config/api-automation-config.md` to load the full framework specification.
+Read `.claude/config/test-automation/api-framework.md` to load the full framework specification.
 
 ### Step 2 — Create Project Structure
 Create the **exact directory and file structure** defined in the config under `automation/api/`. Create every directory and every file listed.
